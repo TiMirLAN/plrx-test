@@ -19,12 +19,13 @@ class BaseCollector:
     Базовый класс коллекторов статистики.
     Реализован поскольку часть логики обработки файлов статистики совпадает.
     """
-    DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+    DATETIME_FORMAT = None
     def __init__(self, query: dict) -> None:
         """
         Коснтруктор коллектора статистики.
 
-        :params query: Данные для выборки. Должны содержать install_date в виде двух дат и app_id в виде строки.
+        :params query: Данные для выборки. Должны содержать install_date
+        в виде двух дат и app_id в виде строки.
         :raises ValueError: Если интервал дат в выборке задан неверно.
         :raises KeyError: Если в queue не хватает полей.
         """
@@ -49,7 +50,8 @@ class BaseCollector:
 
     def _collect(self,**kargs) -> None:
         """
-        Обрабатывает строку данных которая приходит в *args сохраняя результаты в self.results
+        Обрабатывает строку данных которая приходит в *args
+        сохраняя результаты в self.results
 
         Не имплементировано.
         """
@@ -65,7 +67,13 @@ class BaseCollector:
                 (self.from_datetime <= install_date <= self.to_datetime)
 
     def _prepare_row_data(self, row_data) -> None:
-        row_data['install_date'] =self._parse_datetime(row_data['install_date'])
+        """
+        Функция подготвоки часто используемых данных.
+
+        Операции производятся только над теми даными,
+        которые необходимы на каждой итерации сборки.
+        """
+        row_data['install_date'] = self._parse_datetime(row_data['install_date'])
 
     def collect_from(self, file_name: str) -> None:
         """
@@ -142,40 +150,6 @@ def get_config() -> ConfigParser:
     config.read('config.ini')
     return config
 
-def collect_install_counts(installs_data_file_name: str) -> dict:
-    """
-    Возвращает словарь: страна -> количество установок.
-    """
-    results = defaultdict(int)
-    with open(installs_data_file_name) as installs_file:
-        for *_, country_code in reader(installs_file):
-            results[country_code] += 1
-    return dict(results)
-
-def collect_rpis(
-        purchases_file_name: str,
-        date_range: tuple,
-        rpi_delta: tuple,
-        required_app_id: int
-    ) -> list:
-    """
-    Считает rpi delta_range[*] дня для платежей из инервала date_range.
-    """
-    date_from, date_to = date_range
-    rpi_delta_range = range(*rpi_delta)
-    results = defaultdict(float)
-    with open(purchases_file_name) as purchases_file:
-        for payment_str, app_id, country, install_srt, revenue in reader(purchases_file):
-            payment_timest = dt.strptime(payment_str, DF)
-            install_timest = dt.strptime(install_srt, DF)
-            print(int(app_id), required_app_id, app_id == required_app_id)
-            if int(app_id) == required_app_id and date_from <= install_timest < date_to:
-                days = (payment_timest - install_timest).days
-                print(days)
-                if days in rpi_delta_range:
-                    for handled_day in range(rpi_delta_range.start, days):
-                        results[(country, handled_day)] += float(revenue)
-    return dict(results)
 
 def collect_rpi_into_csv() -> None:
     """
@@ -183,6 +157,8 @@ def collect_rpi_into_csv() -> None:
     """
     config = get_config()
     default_query = dict(config['query'])
+    BaseCollector.DATETIME_FORMAT = config['dates']['default_format']
+
     # Подсчёт инсталов
     installs_collector = InstallsCollector(default_query)
     installs_collector.collect_from(config['input']['installs_data_file'])
