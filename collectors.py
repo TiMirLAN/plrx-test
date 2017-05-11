@@ -53,18 +53,18 @@ class BaseCollector:
 
         :params timestamp: Строка с датой.
         :returns: datetime object
-        :raises ValueError: Если дату не удалось распознать. 
+        :raises ValueError: Если дату не удалось распознать.
         """
         return dt.strptime(timestamp, self.DATETIME_FORMAT)
 
-    def _collect(self,**kargs) -> None:
+    def _collect(self, **kwargs) -> None:
         """
         Обрабатывает строку данных которая приходит в *args
         сохраняя результаты в self.results
 
         Не имплементировано.
         """
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def _is_suitable_row(self, install_date: dt, app_id: str, **kwargs) -> bool:
         """
@@ -81,7 +81,7 @@ class BaseCollector:
 
         Операции производятся только над теми даными,
         которые необходимы на каждой итерации сборки.
-        
+
         :params row_data: Строка с данными.
         :returns: Словарь с преобразованными данными.
         """
@@ -118,25 +118,39 @@ class InstallsCollector(BaseCollector):
     для указанного app_id.
     """
     def __init__(self, query: dict) -> None:
+        """
+        Конструктор коллектора количества установок.
+
+        :params query: См. BaseCollector.
+        """
         super().__init__(query)
         self._fieldnames = ['install_date', 'app_id', 'country_code']
         self._results = defaultdict(int)
 
     def _collect(self, country_code: str, **kwargs) -> None:
+        """
+        Обработчик строки данных для подсчёта установок в выборке.
+
+        :params country_code: Код страны из файлов статистики.
+        """
         self._results[country_code] += 1
 
 class RevenueCollector(BaseCollector):
     """
-    Коллектор значений rpi по дням.
+    Коллектор дохода по дням.
 
-    Считает rpi в указанном диапазоне дней за указанный период
-    для указанного app_id.
+    Считает доход в указанном диапазоне дней за указанный период
+    для указанного app_id распределённый по дням и странам.
     """
-    def __init__(self, query: dict, rpi_range: range) -> None:
+    def __init__(self, query: dict, days_range: range) -> None:
         """
+        Конструктор коллектора дохода.
+
+        :params query: См. BaseCollector
+        :params days_range: Диапазон для распределения по дням.
         """
         super().__init__(query)
-        self.rpi_range = rpi_range
+        self.days_range = days_range
         self._fieldnames = [
             'payment_date',
             'app_id',
@@ -144,7 +158,7 @@ class RevenueCollector(BaseCollector):
             'install_date',
             'revenue',
         ]
-        self._results = defaultdict(lambda: [0.0 for i in self.rpi_range])
+        self._results = defaultdict(lambda: [0.0 for i in self.days_range])
 
     def _prepare_row_data(self, row_data: dict) -> dict:
         """
@@ -154,27 +168,37 @@ class RevenueCollector(BaseCollector):
         """
         prepared_data = super()._prepare_row_data(row_data)
         payment_datetime = self._parse_datetime(row_data['payment_date'])
-        prepared_data['payment_date'] = payment_datetime 
+        prepared_data['payment_date'] = payment_datetime
         prepared_data['days_from_install'] = (payment_datetime - prepared_data['install_date']).days
         return prepared_data
 
-    def _is_suitable_row(self, install_date: dt, app_id: str, days_from_install: int, **kwargs) -> bool:
+    def _is_suitable_row(
+            self,
+            install_date: dt,
+            app_id: str,
+            days_from_install: int,
+            **kwargs
+    ) -> bool:
         """
         Функция проверяет удовлетворяет ли строка данных
         условиям выборки по дате установки, идентификатору приложения
         и диапазону дней расчёта rpi.
         """
         is_suitable = super()._is_suitable_row(install_date, app_id)
-        return is_suitable and days_from_install in self.rpi_range
+        return is_suitable and days_from_install in self.days_range
 
     def _collect(self, days_from_install: int, country_code: str, revenue: str, **kwargs):
         """
         Функция подсчёта. Сохраняет в results суммарную выручку за каждый отдельный день
-        из self.rpi_range.
+        из self.days_range.
         """
         self._results[country_code][days_from_install-1] += float(revenue)
 
     def build_results(self) -> None:
+        """
+        Преобразует результаты в словарь вида:
+        код_страны -> [суммарная_прибыль_за_день, ...]
+        """
         super().build_results()
         for country_code, revenue_list in self.results.items():
             revenue_acc = 0
