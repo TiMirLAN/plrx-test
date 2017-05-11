@@ -74,14 +74,19 @@ class BaseCollector:
         return app_id == self.app_id and\
                 (self.from_datetime <= install_date <= self.to_datetime)
 
-    def _prepare_row_data(self, row_data) -> None:
+    def _prepare_row_data(self, row_data) -> dict:
         """
         Функция подготвоки часто используемых данных.
 
         Операции производятся только над теми даными,
         которые необходимы на каждой итерации сборки.
+        
+        :params row_data: Строка с данными.
+        :returns: Словарь с преобразованными данными.
         """
-        row_data['install_date'] = self._parse_datetime(row_data['install_date'])
+        prepared_data = {**row_data}
+        prepared_data['install_date'] = self._parse_datetime(row_data['install_date'])
+        return prepared_data
 
     def collect_from(self, file_name: str) -> None:
         """
@@ -92,7 +97,7 @@ class BaseCollector:
         """
         with open(file_name) as data_file:
             for row_data in DictReader(data_file, fieldnames=self._fieldnames):
-                self._prepare_row_data(row_data)
+                row_data = self._prepare_row_data(row_data)
                 if self._is_suitable_row(**row_data):
                     self._collect(**row_data)
 
@@ -135,16 +140,17 @@ class RpisCollector(BaseCollector):
         ]
         self.results = defaultdict(float)
 
-    def _prepare_row_data(self, row_data: dict) -> None:
+    def _prepare_row_data(self, row_data: dict) -> dict:
         """
         Подготовка необходимых для обработки данных.
 
         :params row_data: Строка данных из csv.
         """
-        super()._prepare_row_data(row_data)
+        prepared_data = super()._prepare_row_data(row_data)
         payment_datetime = self._parse_datetime(row_data['payment_date'])
-        row_data['payment_date'] = payment_datetime 
-        row_data['days_from_install'] = (payment_datetime - row_data['install_date']).days
+        prepared_data['payment_date'] = payment_datetime 
+        prepared_data['days_from_install'] = (payment_datetime - prepared_data['install_date']).days
+        return prepared_data
 
     def _is_suitable_row(self, install_date: dt, app_id: str, days_from_install: int, **kwargs) -> bool:
         """
