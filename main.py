@@ -7,7 +7,7 @@
 
 from configparser import ConfigParser
 from csv import DictWriter
-from collectors import InstallsCollector, RpisCollector, set_up_collectors_date_format
+from collectors import InstallsCollector, RevenueCollector, set_up_collectors_date_format
 
 __author__ = "Tim Mironov"
 __email__ = "timirlan666@gmail.com"
@@ -60,7 +60,7 @@ def collect_rpi_into_csv() -> None:
 
     # Подсчёт rpi
     rpi_range = range(*[int(i) for i in config['rpi']['range'].split(',')])
-    rpi_colletor = RpisCollector(default_query, rpi_range)
+    rpi_colletor = RevenueCollector(default_query, rpi_range)
     rpi_colletor.collect_from(config['input']['purchases_data_file'])
     print(installs_collector.results)
     print(rpi_colletor.results)

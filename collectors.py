@@ -125,7 +125,7 @@ class InstallsCollector(BaseCollector):
     def _collect(self, country_code: str, **kwargs) -> None:
         self._results[country_code] += 1
 
-class RpisCollector(BaseCollector):
+class RevenueCollector(BaseCollector):
     """
     Коллектор значений rpi по дням.
 
