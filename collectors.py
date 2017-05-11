@@ -16,6 +16,16 @@ class BaseCollector:
     """
     Базовый класс коллекторов статистики.
     Реализован поскольку часть логики обработки файлов статистики совпадает.
+
+    Логика:
+        - collect_from построчно читает файл статистики
+            используя _fieldnames для именования полей.
+        - стока данных в виде словаря передаётся в _prepare_row_data
+            для подготовки только необходимых для дальнейшей обработки данных.
+        - поученны строка данных передаются в виде аргументов
+            в _is_suitable_row для проверки удовлетворения условиям выборки.
+        - если строка данных подходит условиям, то она в виде аргументов
+            передаётся в _collect для учёта в результате (result).
     """
     DATETIME_FORMAT = None
     def __init__(self, query: dict) -> None:
@@ -23,7 +33,7 @@ class BaseCollector:
         Коснтруктор коллектора статистики.
 
         :params query: Данные для выборки. Должны содержать install_date
-        в виде двух дат и app_id в виде строки.
+            в виде двух дат и app_id в виде строки.
         :raises ValueError: Если интервал дат в выборке задан неверно.
         :raises KeyError: Если в queue не хватает полей.
         """
@@ -112,6 +122,8 @@ class RpisCollector(BaseCollector):
     для указанного app_id.
     """
     def __init__(self, query: dict, rpi_range: range) -> None:
+        """
+        """
         super().__init__(query)
         self.rpi_range = rpi_range
         self._fieldnames = [
@@ -124,12 +136,22 @@ class RpisCollector(BaseCollector):
         self.results = defaultdict(float)
 
     def _prepare_row_data(self, row_data: dict) -> None:
+        """
+        Подготовка необходимых для обработки данных.
+
+        :params row_data: Строка данных из csv.
+        """
         super()._prepare_row_data(row_data)
         payment_datetime = self._parse_datetime(row_data['payment_date'])
         row_data['payment_date'] = payment_datetime 
         row_data['days_from_install'] = (payment_datetime - row_data['install_date']).days
 
     def _is_suitable_row(self, install_date: dt, app_id: str, days_from_install: int, **kwargs) -> bool:
+        """
+        Функция проверяет удовлетворяет ли строка данных
+        условиям выборки по дате установки, идентификатору приложения
+        и диапазону дней расчёта rpi.
+        """
         is_suitable = super()._is_suitable_row(install_date, app_id)
         return is_suitable and days_from_install in self.rpi_range
 
