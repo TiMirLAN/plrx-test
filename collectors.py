@@ -44,6 +44,7 @@ class BaseCollector:
         if self.from_datetime > self.to_datetime:
             raise ValueError('Bad datetime interval. Check datetime_interval_to_handle.')
         self.results = None
+        self._results = None
         self._fieldnames = None
 
     def _parse_datetime(self, timestamp: str) -> dt:
@@ -100,9 +101,14 @@ class BaseCollector:
                 row_data = self._prepare_row_data(row_data)
                 if self._is_suitable_row(**row_data):
                     self._collect(**row_data)
+        self.build_results()
 
-    def results_to_dict(self) -> dict:
-        return dict(self.results)
+    def build_results(self) -> None:
+        """
+        Функция для сборки конечных результатов для последующей обработки.
+        """
+        self.results = dict(self._results)
+
 
 class InstallsCollector(BaseCollector):
     """
@@ -114,10 +120,10 @@ class InstallsCollector(BaseCollector):
     def __init__(self, query: dict) -> None:
         super().__init__(query)
         self._fieldnames = ['install_date', 'app_id', 'country_code']
-        self.results = defaultdict(int)
+        self._results = defaultdict(int)
 
     def _collect(self, country_code: str, **kwargs) -> None:
-        self.results[country_code] += 1
+        self._results[country_code] += 1
 
 class RpisCollector(BaseCollector):
     """
@@ -138,7 +144,7 @@ class RpisCollector(BaseCollector):
             'install_date',
             'revenue',
         ]
-        self.results = defaultdict(float)
+        self._results = defaultdict(lambda: [0.0 for i in self.rpi_range])
 
     def _prepare_row_data(self, row_data: dict) -> dict:
         """
@@ -166,7 +172,18 @@ class RpisCollector(BaseCollector):
         Функция подсчёта. Сохраняет в results суммарную выручку за каждый отдельный день
         из self.rpi_range.
         """
-        self.results[(country_code, days_from_install)] += float(revenue)
+        self._results[country_code][days_from_install-1] += float(revenue)
+
+    def build_results(self) -> None:
+        super().build_results()
+        for country_code, revenue_list in self.results.items():
+            revenue_acc = 0
+            revenue_for_day = []
+            for per_day in revenue_list:
+                revenue_acc += per_day
+                revenue_for_day.append(revenue_acc)
+            self.results[country_code] = revenue_for_day
+
 
 def set_up_collectors_date_format(strptime_format: str) -> None:
     """
