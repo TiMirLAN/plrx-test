@@ -4,6 +4,7 @@
 """
 
 from csv import DictWriter
+from operator import itemgetter
 
 __author__ = "Tim Mironov"
 __email__ = "timirlan666@gmail.com"
@@ -37,7 +38,8 @@ class RpisWriter:
         Генератор строк данных для записи в результирующую
         таблицу rpi.
         """
-        for country_code, installs in self.installs.items():
+        ordered_items = sorted(self.installs.items(), key=itemgetter(1), reverse=True)
+        for country_code, installs in ordered_items:
             revenues_per_day = self.revenues.get(country_code, self._zero_row)
             row = [country_code, installs] + [
                 format(revenue/installs, '.2f') for revenue in revenues_per_day
