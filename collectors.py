@@ -27,7 +27,14 @@ class BaseCollector:
         - если строка данных подходит условиям, то она в виде аргументов
             передаётся в _collect для учёта в результате (result).
     """
-    DATETIME_FORMAT = None
+#     DATETIME_FORMAT = (
+#         (0,4),  # year
+#         (5,7),  # month
+#         (8,10), # day
+#         (11,13),# hour
+#         (14,16),# minute
+#         (17,19),# second
+#     )
     def __init__(self, query: dict) -> None:
         """
         Коснтруктор коллектора статистики.
@@ -55,7 +62,18 @@ class BaseCollector:
         :returns: datetime object
         :raises ValueError: Если дату не удалось распознать.
         """
-        return dt.strptime(timestamp, self.DATETIME_FORMAT)
+        # return dt.strptime(timestamp, self.DATETIME_FORMAT)
+        # Сишком медленно.
+        # return dt(*tuple(int(timestamp[i:j]) for i,j in self.DATETIME_FORMAT))
+        # Все ещё медленно.
+        return dt(
+            int(timestamp[0:4]),
+            int(timestamp[5:7]),
+            int(timestamp[8:10]),
+            int(timestamp[11:13]),
+            int(timestamp[14:16]),
+            int(timestamp[17:19]),
+        )
 
     def _collect(self, **kwargs) -> None:
         """
