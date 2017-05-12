@@ -6,7 +6,7 @@
 """
 
 from configparser import ConfigParser
-from collectors import InstallsCollector, RevenueCollector, set_up_collectors_date_format
+from collectors import InstallsCollector, RevenueCollector
 from rpi_writer import RpisWriter
 
 __author__ = "Tim Mironov"
@@ -28,7 +28,6 @@ def collect_rpi_into_csv() -> None:
     """
     config = get_config()
     default_query = dict(config['query'])
-    set_up_collectors_date_format(config['dates']['default_format'])
 
     # Подсчёт инсталов
     installs_collector = InstallsCollector(default_query)

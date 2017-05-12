@@ -227,10 +227,3 @@ class RevenueCollector(BaseCollector):
                 revenue_acc += per_day
                 revenue_for_day.append(revenue_acc)
             self.results[country_code] = revenue_for_day
-
-
-def set_up_collectors_date_format(strptime_format: str) -> None:
-    """
-    Настройка формата искользуемой для парсинга даты коллекторами.
-    """
-    BaseCollector.DATETIME_FORMAT = strptime_format
