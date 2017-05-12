@@ -97,7 +97,9 @@ class BaseCollector:
         :params file_name: CSV-файл для загрузки.
         """
         with open(file_name) as data_file:
-            for row_data in DictReader(data_file, fieldnames=self._fieldnames):
+            reader = DictReader(data_file, fieldnames=self._fieldnames)
+            next(reader)
+            for row_data in reader:
                 row_data = self._prepare_row_data(row_data)
                 if self._is_suitable_row(**row_data):
                     self._collect(**row_data)
