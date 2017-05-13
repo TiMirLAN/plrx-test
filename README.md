@@ -3,6 +3,7 @@
 Само [задание](https://docs.google.com/document/d/1q99ks9PqxLrIX4LBtUFdJaB7R9uNtQGqW3rSVd3_CtA/edit).
 
 Для проверки работы:
+
     - распаковать архив `test_marketing.zip` в папке `./data`.
     - запустить исполняемый `./main.py`.
 
