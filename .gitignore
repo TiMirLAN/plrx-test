@@ -6,3 +6,6 @@
 __pycache__
 
 *.csv
+
+*.ipynb
+.ipynb_checkpoints
