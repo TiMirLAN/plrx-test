@@ -37,11 +37,11 @@ def collect_rpi_into_csv() -> None:
     rpi_day_from, rpi_day_to = [int(i) for i in config['rpi']['range'].split(',')]
     rpi_range = range(rpi_day_from, rpi_day_to + 1)
 
-    rpi_colletor = RevenueCollector(default_query, rpi_range)
-    rpi_colletor.collect_from(config['input']['purchases_data_file'])
+    revenue_collector = RevenueCollector(default_query, rpi_range)
+    revenue_collector.collect_from(config['input']['purchases_data_file'])
 
     # Подсчёт и запись результатов.
-    rpi_writer = RpisWriter(installs_collector.results, rpi_colletor.results, rpi_range)
+    rpi_writer = RpisWriter(installs_collector.results, revenue_collector.results, rpi_range)
     rpi_writer.write_to(config['output']['results_data_file'])
 
 if __name__ == "__main__":
