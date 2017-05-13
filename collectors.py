@@ -162,6 +162,7 @@ class RevenueCollector(BaseCollector):
         """
         super().__init__(query)
         self.days_range = days_range
+        self.collect_range = range(0, days_range.stop)
         self._fieldnames = [
             'payment_date',
             'app_id',
@@ -169,7 +170,7 @@ class RevenueCollector(BaseCollector):
             'install_date',
             'revenue',
         ]
-        self._results = defaultdict(lambda: [0.0 for i in self.days_range])
+        self._results = defaultdict(lambda: [0.0 for i in self.collect_range])
 
     def _prepare_row_data(self, row_data: dict) -> dict:
         """
@@ -196,14 +197,14 @@ class RevenueCollector(BaseCollector):
         и диапазону дней расчёта rpi.
         """
         is_suitable = super()._is_suitable_row(install_date, app_id)
-        return is_suitable and days_from_install in self.days_range
+        return is_suitable and days_from_install in self.collect_range
 
     def _collect(self, days_from_install: int, country_code: str, revenue: str, **kwargs):
         """
         Функция подсчёта. Сохраняет в results суммарную выручку за каждый отдельный день
-        из self.days_range.
+        из self.collect_range.
         """
-        self._results[country_code][days_from_install-1] += float(revenue)
+        self._results[country_code][days_from_install] += float(revenue)
 
     def build_results(self) -> None:
         """
@@ -217,4 +218,4 @@ class RevenueCollector(BaseCollector):
             for per_day in revenue_list:
                 revenue_acc += per_day
                 revenue_for_day.append(revenue_acc)
-            self.results[country_code] = revenue_for_day
+            self.results[country_code] = revenue_for_day[self.days_range.start:self.days_range.stop]

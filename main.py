@@ -34,7 +34,9 @@ def collect_rpi_into_csv() -> None:
     installs_collector.collect_from(config['input']['installs_data_file'])
 
     # Подсчёт rpi
-    rpi_range = range(*[int(i) for i in config['rpi']['range'].split(',')])
+    rpi_day_from, rpi_day_to = [int(i) for i in config['rpi']['range'].split(',')]
+    rpi_range = range(rpi_day_from, rpi_day_to + 1)
+
     rpi_colletor = RevenueCollector(default_query, rpi_range)
     rpi_colletor.collect_from(config['input']['purchases_data_file'])
 
